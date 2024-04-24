@@ -2,11 +2,9 @@
 FROM ubuntu:22.04
 MAINTAINER Niema Moshiri <niemamoshiri@gmail.com>
 RUN apt-get update && apt-get -y upgrade && \
-    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y cmake g++ gcc git make python3 python3-pip time wget && \
+    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y cmake g++ gcc git make python3 python3-pip time wget zip && \
     python3 -m pip install --upgrade pip && \
-
-    # install bealign (part of BioExt)
-    pip3 install bioext && \
+    pip3 install tqdm bioext && \
 
     # install cawlign
     git clone "https://github.com/veg/cawlign.git" && \

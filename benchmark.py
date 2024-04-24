@@ -6,12 +6,13 @@ Benchmark cawlign and bealign. Assumes both (and bam2msa) are in your PATH.
 # imports
 from glob import glob
 from gzip import open as gopen
-from os import mkdir
-from os.path import isfile, isdir
+from os import chdir, getcwd, mkdir
+from os.path import abspath, expanduser, isfile, isdir
 from random import choices
 from shutil import rmtree
 from subprocess import run
-from zipfile import ZipFile
+from sys import argv, stdout
+from tqdm import tqdm
 import argparse
 
 # constants
@@ -21,6 +22,7 @@ TIME_COMMAND_BASE = ['/usr/bin/time', '-v']
 CAWLIGN_COMMAND_BASE = ['cawlign', '-r', 'HXB2_pol', '-t', 'codon', '-I', '-s', 'HIV_BETWEEN_F']
 BEALIGN_COMMAND_BASE = ['bealign', '-r', 'HXB2_pol', '-m', 'HIV_BETWEEN_F']
 BAM2MSA_COMMAND_BASE = ['bam2msa']
+ZIP_COMMAND_BASE = ['zip', '-9', '-r']
 
 # parse user args
 def parse_args():
@@ -32,7 +34,9 @@ def parse_args():
     parser.add_argument('-d', '--delta', required=True, type=int, help="Delta Between Subsequent Valus of n")
     parser.add_argument('-r', '--reps', required=False, type=int, default=DEFAULT_REPS, help="Number of Replicates per n")
     args = parser.parse_args()
+    args.sequences = abspath(expanduser(args.sequences))
     assert isfile(args.sequences), "File not found: %s" % args.sequences
+    args.output = abspath(expanduser(args.output))
     assert not isfile(args.output) and not isdir(args.output), "Output file exists: %s" % args.output
     args.output_tmp = '%s%s' % (args.output, OUTPUT_TMP_SUFFIX)
     assert not isdir(args.output_tmp) and not isfile(args.output_tmp), "Temporary output folder exists: %s" % args.output_tmp
@@ -89,22 +93,27 @@ if __name__ == "__main__":
     args = parse_args()
     seqs = readFASTA(args.sequences)
     assert args.max_n <= len(seqs), "max_n (%s) is larger than the total number of sequences in file: %s" % (args.max_n, args.sequences)
+    print("Benchmark Command: %s" % ' '.join(argv)); stdout.flush()
 
     # create output tmp folder and benchmark datasets
+    print("Creating benchmark datasets..."); stdout.flush()
     mkdir(args.output_tmp)
     len_max_n = len(str(args.max_n)); len_reps = len(str(args.reps))
     for n in range(args.min_n, args.max_n+1, args.delta):
         n_s = str(n).zfill(len_max_n)
+        curr_n_folder = '%s/n%s' % (args.output_tmp, n_s)
+        mkdir(curr_n_folder)
         for r in range(1, args.reps+1):
             r_s = str(r).zfill(len_reps)
             curr_rep_name = 'n%s.r%s' % (n_s, r_s)
-            curr_rep_folder = '%s/%s' % (args.output_tmp, curr_rep_name)
+            curr_rep_folder = '%s/%s' % (curr_n_folder, curr_rep_name)
             mkdir(curr_rep_folder)
             curr_rep_fasta_path = '%s/%s.fas' % (curr_rep_folder, curr_rep_name)
             subsample_seqs(seqs, n, curr_rep_fasta_path)
 
     # run bealign and cawlign on each dataset
-    for seq_fn in sorted(glob('%s/n*.r*/*.fas' % args.output_tmp)):
+    print("Running bealign and cawlign..."); stdout.flush()
+    for seq_fn in tqdm(sorted(glob('%s/*/n*.r*/*.fas' % args.output_tmp))):
         seq_prefix = seq_fn.rstrip('.fas')
 
         # run cawlign
@@ -162,6 +171,8 @@ if __name__ == "__main__":
             hamming_f.write('%s\t%s\t%s\n' % (ID, d, len(s_cawlign)))
         hamming_f.close()
 
-    # zip output directory and delete
-    out_zip = ZipFile(args.output, 'w', compresslevel=9)
-    out_zip.close()
+    # zip output directory and clean up
+    print("Zipping benchmark results..."); stdout.flush()
+    tmp = getcwd(); chdir(args.output_tmp)
+    zip_command = ZIP_COMMAND_BASE + [args.output] + sorted(glob('*'))
+    run(zip_command); chdir(tmp); rmtree(args.output_tmp)
