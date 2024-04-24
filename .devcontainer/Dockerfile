@@ -1,4 +1,4 @@
-# Minimal Docker image using Alpine base
+# Minimal Docker image using Ubuntu base
 FROM ubuntu:22.04
 MAINTAINER Niema Moshiri <niemamoshiri@gmail.com>
 RUN apt-get update && apt-get -y upgrade && \
