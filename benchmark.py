@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 '''
-Benchmark cawlign and bealign. Assumes both are in your PATH.
+Benchmark cawlign and bealign. Assumes both (and bam2msa) are in your PATH.
 '''
 
 # imports
@@ -17,6 +17,8 @@ DEFAULT_REPS = 10
 OUTPUT_TMP_SUFFIX = '.tmp'
 TIME_COMMAND_BASE = ['/usr/bin/time', '-v']
 CAWLIGN_COMMAND_BASE = ['cawlign', '-r', 'HXB2_pol', '-t', 'codon', '-I', '-s', 'HIV_BETWEEN_F']
+BEALIGN_COMMAND_BASE = ['bealign', '-r', 'HXB2_pol', '-m', 'HIV_BETWEEN_F']
+BAM2MSA_COMMAND_BASE = ['bam2msa']
 
 # parse user args
 def parse_args():
@@ -102,9 +104,39 @@ if __name__ == "__main__":
 
         # run cawlign
         cawlign_prefix = '%s.cawlign' % seq_prefix
-        cawlign_command = TIME_COMMAND_BASE + ['-o', '%s.time.txt' % cawlign_prefix] + CAWLIGN_COMMAND_BASE + ['-o', '%s.aln' % cawlign_prefix, seq_fn]
-        cawlign_stdout_f = open('%s.cawlign.out.txt' % seq_prefix, 'w')
-        cawlign_stderr_f = open('%s.cawlign.err.txt' % seq_prefix, 'w')
-        cawlign_stdout_f.write('COMMAND: %s\n\n' % ' '.join(cawlign_command))
+        cawlign_time_fn = '%s.time.txt' % cawlign_prefix
+        cawlign_aln_fn = '%s.aln' % cawlign_prefix
+        cawlign_stdout_fn = '%s.out.txt' % cawlign_prefix
+        cawlign_stderr_fn = '%s.err.txt' % cawlign_prefix
+        cawlign_command = TIME_COMMAND_BASE + ['-o', cawlign_time_fn] + CAWLIGN_COMMAND_BASE + ['-o', cawlign_aln_fn, seq_fn]
+        cawlign_stdout_f = open(cawlign_stdout_fn, 'w')
+        cawlign_stderr_f = open(cawlign_stderr_fn, 'w')
         run(cawlign_command, stdout=cawlign_stdout_f, stderr=cawlign_stderr_f)
-        cawlign_stdout_f.close(); cawlign_stderr_f.close()
+        cawlign_stdout_f.close()
+        cawlign_stderr_f.close()
+
+        # run bealign
+        bealign_prefix = '%s.bealign' % seq_prefix
+        bealign_time_fn = '%s.time.txt' % bealign_prefix
+        bealign_bam_fn = '%s.bam' % bealign_prefix
+        bealign_stdout_fn = '%s.out.txt' % bealign_prefix
+        bealign_stderr_fn = '%s.err.txt' % bealign_prefix
+        bealign_command = TIME_COMMAND_BASE + ['-o', bealign_time_fn] + BEALIGN_COMMAND_BASE + ['-K', seq_fn, bealign_bam_fn]
+        bealign_stdout_f = open(bealign_stdout_fn, 'w')
+        bealign_stderr_f = open(bealign_stderr_fn, 'w')
+        run(bealign_command, stdout=bealign_stdout_f, stderr=bealign_stderr_f)
+        bealign_stdout_f.close()
+        bealign_stderr_f.close()
+
+        # run bam2msa (convert bealign BAM output to FASTA)
+        bam2msa_prefix = '%s.bam2msa' % bealign_prefix
+        bam2msa_time_fn = '%s.time.txt' % bam2msa_prefix
+        bam2msa_aln_fn = '%s.aln' % bam2msa_prefix
+        bam2msa_stdout_fn = '%s.out.txt' % bam2msa_prefix
+        bam2msa_stderr_fn = '%s.err.txt' % bam2msa_prefix
+        bam2msa_command = TIME_COMMAND_BASE + ['-o', bam2msa_time_fn] + BAM2MSA_COMMAND_BASE + [bealign_bam_fn, bam2msa_aln_fn]
+        bam2msa_stdout_f = open(bam2msa_stdout_fn, 'w')
+        bam2msa_stderr_f = open(bam2msa_stderr_fn, 'w')
+        run(bam2msa_command, stdout=bam2msa_stdout_f, stderr=bam2msa_stderr_f)
+        bam2msa_stdout_f.close()
+        bam2msa_stderr_f.close()
