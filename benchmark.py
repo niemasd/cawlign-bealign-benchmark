@@ -41,10 +41,12 @@ def parse_args():
     return args
 
 # read FASTA stream and return (ID,seq) dictionary
-def readFASTA(stream):
-    seqs = {}
-    name = None
-    seq = ''
+def readFASTA(fn):
+    if fn.endswith('.gz'):
+        stream = gopen(fn, 'rt')
+    else:
+        stream = open(fn, 'r')
+    seqs = dict(); name = None; seq = ''
     for line in stream:
         l = line.strip()
         if len(l) == 0:
@@ -74,15 +76,16 @@ def subsample_seqs(seqs, n, out_fn):
         out_f.write('>%s\n%s\n' % (ID, seqs[ID]))
     out_f.close()
 
+# calculate Hamming distance (as a count)
+def hamming_distance(s, t):
+    assert len(s) == len(t), "Lengths of strings differ: %s and %s" % (len(s), len(t))
+    return sum(1 for i in range(len(s)) if s[i] != t[i])
+
 # main program
 if __name__ == "__main__":
     # parse args and load sequences
     args = parse_args()
-    if args.sequences.lower().endswith('.gz'):
-        seqs_f = gopen(args.sequences, 'rt')
-    else:
-        seqs_f = open(args.sequences, 'r')
-    seqs = readFASTA(seqs_f); seqs_f.close()
+    seqs = readFASTA(args.sequences)
     assert args.max_n <= len(seqs), "max_n (%s) is larger than the total number of sequences in file: %s" % (args.max_n, args.sequences)
 
     # create output tmp folder and benchmark datasets
@@ -140,3 +143,17 @@ if __name__ == "__main__":
         run(bam2msa_command, stdout=bam2msa_stdout_f, stderr=bam2msa_stderr_f)
         bam2msa_stdout_f.close()
         bam2msa_stderr_f.close()
+
+        # compare the alignments
+        hamming_fn = '%s.hamming.tsv' % seq_prefix
+        seqs_cawlign = readFASTA(cawlign_aln_fn)
+        seqs_bealign = readFASTA(bam2msa_aln_fn)
+        IDs_cawlign = sorted(seqs_cawlign.keys())
+        IDs_bealign = sorted(seqs_bealign.keys())
+        assert IDs_cawlign == IDs_bealign, "Mismatch between IDs in cawlign (%s) and bealign (%s)" % (cawlign_aln_fn, bam2msa_aln_fn)
+        hamming_f = open(hamming_fn, 'w')
+        hamming_f.write("ID\tHamming (count)\tLength\n")
+        for ID in IDs_cawlign:
+            d = hamming_distance(seqs_cawlign[ID], seqs_bealign[ID])
+            hamming_f.write('%s\t%s\n' % (ID, d, len(seqs_cawlign[ID])))
+        hamming_f.close()
