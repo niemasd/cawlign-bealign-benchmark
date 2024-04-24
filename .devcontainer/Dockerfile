@@ -2,12 +2,16 @@
 FROM ubuntu:22.04
 MAINTAINER Niema Moshiri <niemamoshiri@gmail.com>
 RUN apt-get update && apt-get -y upgrade && \
-    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y cmake g++ gcc make wget && \
+    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y cmake g++ gcc git make wget && \
 
-    # install tn93
-    wget -qO- "https://github.com/veg/tn93/archive/refs/tags/v.1.0.13.actual.tar.gz" | tar -zx && \
-    cd tn93-* && \
+    # install cawlign
+    git clone "https://github.com/veg/cawlign.git" && \
+    cd cawlign && \
     cmake . && \
+    make && \
     make install && \
     cd .. && \
-    rm -rf tn93-*
+    rm -rf cawlign && \
+
+    # Clean up
+    rm -rf /root/.cache /tmp/*
