@@ -9,7 +9,9 @@ from gzip import open as gopen
 from os import mkdir
 from os.path import isfile, isdir
 from random import choices
+from shutil import rmtree
 from subprocess import run
+from zipfile import ZipFile
 import argparse
 
 # constants
@@ -154,6 +156,12 @@ if __name__ == "__main__":
         hamming_f = open(hamming_fn, 'w')
         hamming_f.write("ID\tHamming (count)\tLength\n")
         for ID in IDs_cawlign:
-            d = hamming_distance(seqs_cawlign[ID], seqs_bealign[ID])
-            hamming_f.write('%s\t%s\n' % (ID, d, len(seqs_cawlign[ID])))
+            s_cawlign = seqs_cawlign[ID]
+            s_bealign = seqs_bealign[ID][:-3] # bealign includes terminal STOP in reference, so remove it
+            d = hamming_distance(s_cawlign, s_bealign)
+            hamming_f.write('%s\t%s\t%s\n' % (ID, d, len(s_cawlign)))
         hamming_f.close()
+
+    # zip output directory and delete
+    out_zip = ZipFile(args.output, 'w', compresslevel=9)
+    out_zip.close()
