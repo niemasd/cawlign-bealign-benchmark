@@ -1,3 +1,7 @@
+# benchmark output files
+*.zip
+*.tmp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
