@@ -4,6 +4,8 @@ MAINTAINER Niema Moshiri <niemamoshiri@gmail.com>
 RUN apt-get update && apt-get -y upgrade && \
     DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y cmake g++ gcc git make python3 python3-pip wget && \
     python3 -m pip install --upgrade pip && \
+
+    # install bealign (part of BioExt)
     pip3 install bioext && \
 
     # install cawlign
