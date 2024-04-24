@@ -9,11 +9,14 @@ from gzip import open as gopen
 from os import mkdir
 from os.path import isfile, isdir
 from random import choices
+from subprocess import run
 import argparse
 
 # constants
 DEFAULT_REPS = 10
 OUTPUT_TMP_SUFFIX = '.tmp'
+TIME_COMMAND_BASE = ['/usr/bin/time', '-v']
+CAWLIGN_COMMAND_BASE = ['cawlign', '-r', 'HXB2_pol', '-t', 'codon', '-I', '-s', 'HIV_BETWEEN_F']
 
 # parse user args
 def parse_args():
@@ -95,4 +98,13 @@ if __name__ == "__main__":
 
     # run bealign and cawlign on each dataset
     for seq_fn in sorted(glob('%s/n*.r*/*.fas' % args.output_tmp)):
-        print(seq_fn) # TODO
+        seq_prefix = seq_fn.rstrip('.fas')
+
+        # run cawlign
+        cawlign_prefix = '%s.cawlign' % seq_prefix
+        cawlign_command = TIME_COMMAND_BASE + ['-o', '%s.time.txt' % cawlign_prefix] + CAWLIGN_COMMAND_BASE + ['-o', '%s.aln' % cawlign_prefix, seq_fn]
+        cawlign_stdout_f = open('%s.cawlign.out.txt' % seq_prefix, 'w')
+        cawlign_stderr_f = open('%s.cawlign.err.txt' % seq_prefix, 'w')
+        cawlign_stdout_f.write('COMMAND: %s\n\n' % ' '.join(cawlign_command))
+        run(cawlign_command, stdout=cawlign_stdout_f, stderr=cawlign_stderr_f)
+        cawlign_stdout_f.close(); cawlign_stderr_f.close()
