@@ -12,8 +12,7 @@ jobs:
         DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC sudo apt-get install -y cmake g++ gcc git make python3 python3-pip time wget zip && \
         sudo -H pip3 install tqdm bioext && \
         git clone "https://github.com/veg/cawlign.git" && \
-        cd cawlign && cmake . && make && sudo make install && cd .. && rm -rf cawlign && \
-        rm -rf /root/.cache /tmp/*
+        cd cawlign && cmake . && make && sudo make install && cd .. && rm -rf cawlign
     - name: Run benchmark script
       run: |
         ./benchmark.py -s data/popset_183186851.fas.gz -n 100 -N 1000 -d 100 -o benchmark_results.zip
