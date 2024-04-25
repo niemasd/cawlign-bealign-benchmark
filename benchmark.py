@@ -8,7 +8,7 @@ from glob import glob
 from gzip import open as gopen
 from os import chdir, getcwd, mkdir
 from os.path import abspath, expanduser, isfile, isdir
-from random import choices
+from random import sample
 from shutil import rmtree
 from subprocess import run
 from sys import argv, stdout
@@ -73,7 +73,7 @@ def readFASTA(fn):
 # create subsampled sequence dataset
 def subsample_seqs(seqs, n, out_fn):
     assert n < len(seqs), "n (%s) is larger than the number of sequences (%s)" % (n, len(seqs))
-    IDs = choices(list(seqs.keys()), k=n)
+    IDs = sample(list(seqs.keys()), n)
     if out_fn.lower().endswith('.gz'):
         out_f = gopen(out_fn, 'wt')
     else:
