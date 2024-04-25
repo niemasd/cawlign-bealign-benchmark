@@ -1,0 +1,37 @@
+name: Run cawlign vs. bealign benchmarks
+on: [push]
+jobs:
+  compile_files:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Git repository
+      uses: actions/checkout@v2
+    - name: Set up environment
+      run: |
+        sudo apt-get update && apt-get -y upgrade && \
+        DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC sudo apt-get install -y cmake g++ gcc git make python3 python3-pip time wget zip && \
+        sudo -H pip3 install tqdm bioext && \
+        git clone "https://github.com/veg/cawlign.git" && \
+        cd cawlign && cmake . && make && sudo make install && cd .. && rm -rf cawlign && \
+        rm -rf /root/.cache /tmp/*
+    - name: Run benchmark script
+      run: |
+        ./benchmark.py -s data/popset_183186851.fas.gz -n 100 -N 1000 -d 100 -o benchmark_results.zip
+    - name: Generate release tag
+      id: tag
+      run: |
+        echo "::set-output name=release_tag::$(date +"%Y-%m-%d_%H-%M-%S")"
+    - name: Publish release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload benchmark results to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: benchmark_results.zip
+        asset_name: benchmark_results.zip
+        tag: ${{ steps.tag.outputs.release_tag }}
+        overwrite: true
