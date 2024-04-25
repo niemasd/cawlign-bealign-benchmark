@@ -33,6 +33,7 @@ def parse_args():
     parser.add_argument('-N', '--max_n', required=True, type=int, help="Maximum Number of Sequences in Benchmark (inclusive)")
     parser.add_argument('-d', '--delta', required=True, type=int, help="Delta Between Subsequent Valus of n")
     parser.add_argument('-r', '--reps', required=False, type=int, default=DEFAULT_REPS, help="Number of Replicates per n")
+    parser.add_argument('-A', '--run_all', action="store_true", help="Also run 1 replicate of ALL of the input sequences")
     args = parser.parse_args()
     args.sequences = abspath(expanduser(args.sequences))
     assert isfile(args.sequences), "File not found: %s" % args.sequences
@@ -72,7 +73,7 @@ def readFASTA(fn):
 
 # create subsampled sequence dataset
 def subsample_seqs(seqs, n, out_fn):
-    assert n < len(seqs), "n (%s) is larger than the number of sequences (%s)" % (n, len(seqs))
+    assert n <= len(seqs), "n (%s) is larger than the number of sequences (%s)" % (n, len(seqs))
     IDs = sample(list(seqs.keys()), n)
     if out_fn.lower().endswith('.gz'):
         out_f = gopen(out_fn, 'wt')
@@ -111,9 +112,20 @@ if __name__ == "__main__":
             curr_rep_fasta_path = '%s/%s.fas' % (curr_rep_folder, curr_rep_name)
             subsample_seqs(seqs, n, curr_rep_fasta_path)
 
+    # add the full input dataset if the user wants to run on everything
+    if args.run_all:
+        n_s = 'all'
+        curr_n_folder = '%s/%s' % (args.output_tmp, n_s)
+        mkdir(curr_n_folder)
+        curr_rep_name = 'all'
+        curr_rep_folder = '%s/%s' % (curr_n_folder, curr_rep_name)
+        mkdir(curr_rep_folder)
+        curr_rep_fasta_path = '%s/%s.fas' % (curr_rep_folder, curr_rep_name)
+        subsample_seqs(seqs, len(seqs), curr_rep_fasta_path)
+
     # run bealign and cawlign on each dataset
     print("Running bealign and cawlign..."); stdout.flush()
-    for seq_fn in tqdm(sorted(glob('%s/*/n*.r*/*.fas' % args.output_tmp))):
+    for seq_fn in tqdm(sorted(glob('%s/*/*/*.fas' % args.output_tmp))):
         seq_prefix = seq_fn.rstrip('.fas')
 
         # run cawlign
