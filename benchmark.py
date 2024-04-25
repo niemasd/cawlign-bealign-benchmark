@@ -16,7 +16,7 @@ from tqdm import tqdm
 import argparse
 
 # constants
-DEFAULT_REPS = 10
+DEFAULT_REPS = 5
 OUTPUT_TMP_SUFFIX = '.tmp'
 TIME_COMMAND_BASE = ['/usr/bin/time', '-v']
 CAWLIGN_COMMAND_BASE = ['cawlign', '-r', 'HXB2_pol', '-t', 'codon', '-I', '-s', 'HIV_BETWEEN_F']
