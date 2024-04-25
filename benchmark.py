@@ -162,13 +162,16 @@ if __name__ == "__main__":
         IDs_cawlign = sorted(seqs_cawlign.keys())
         IDs_bealign = sorted(seqs_bealign.keys())
         assert IDs_cawlign == IDs_bealign, "Mismatch between IDs in cawlign (%s) and bealign (%s)" % (cawlign_aln_fn, bam2msa_aln_fn)
+        s_ref = seqs_cawlign['HXB2_pol']
         hamming_f = open(hamming_fn, 'w')
-        hamming_f.write("ID\tHamming (count)\tLength\n")
+        hamming_f.write("ID\tcawlign-bealign\tcawlign-ref\tbealign-ref\tLength\n")
         for ID in IDs_cawlign:
             s_cawlign = seqs_cawlign[ID]
             s_bealign = seqs_bealign[ID][:-3] # bealign includes terminal STOP in reference, so remove it
-            d = hamming_distance(s_cawlign, s_bealign)
-            hamming_f.write('%s\t%s\t%s\n' % (ID, d, len(s_cawlign)))
+            d_cawlign_bealign = hamming_distance(s_cawlign, s_bealign)
+            d_cawlign_ref = hamming_distance(s_cawlign, s_ref)
+            d_bealign_ref = hamming_distance(s_bealign, s_ref)
+            hamming_f.write('%s\t%s\t%s\t%s\t%s\n' % (ID, d_cawlign_bealign, d_cawlign_ref, d_bealign_ref, len(s_ref)))
         hamming_f.close()
 
     # zip output directory and clean up
